@@ -1,0 +1,101 @@
+@use 'sass:math';
+
+@function v($base, $unit: px, $multiplier: 4) {
+    @return #{$base * $multiplier}#{$unit};
+}
+
+@function color($map, $color) {
+    @return map-get($map, $color);
+}
+
+@function background($color) {
+    @return map-get($background, $color);
+}
+
+@function gradient($direction, $color) {
+    $start: map-get($gradient, '#{$color}-start');
+    $end: map-get($gradient, '#{$color}-end');
+
+    @return linear-gradient(to $direction, $start, $end);
+}
+
+// Offset is for like, if you wanna match it with stroke-shadow
+@function shadow($direction, $color, $size, $spread: 0, $offset: null) {
+    $offset-size: if(
+        sass($offset): $offset; else: $size
+    );
+
+    @if $direction == 'top' {
+        @return 0 (-$size) #{$spread} #{$color};
+    } @else if $direction == 'bottom' {
+        @return 0 $size #{$spread} #{$color};
+    } @else if $direction == 'left' {
+        @return (-$size) 0 #{$spread} #{$color};
+    } @else if $direction == 'right' {
+        @return $size 0 #{$spread} #{$color};
+    } @else if $direction == 'top-left' {
+        @return (-$offset-size) (-$size) #{$spread} #{$color};
+    } @else if $direction == 'top-right' {
+        @return $offset-size(-$size) #{$spread} #{$color};
+    } @else if $direction == 'bottom-left' {
+        @return (-$offset-size) $size #{$spread} #{$color};
+    } @else if $direction == 'bottom-right' {
+        @return $offset-size $size #{$spread} #{$color};
+    } @else {
+        @warn 'Invalid direction '#{$direction}' provided.';
+        @return null;
+    }
+}
+
+@function stroke($color, $size: 0.1em) {
+    @return #{shadow('top', $color, $size)}, #{shadow('top-right', $color, $size)}, #{shadow('right', $color, $size)},
+        #{shadow('bottom-right', $color, $size)}, #{shadow('bottom', $color, $size)},
+        #{shadow('bottom-left', $color, $size)}, #{shadow('left', $color, $size)}, #{shadow('top-left', $color, $size)};
+}
+
+@function stroke-shadow($direction, $color: color($stroke, text), $size: 5, $stroke-size: 2.5, $spread: null) {
+    @if ($direction == 'top' or $direction == 'bottom') {
+        @return stroke($color, $stroke-size), shadow('#{$direction}-left', $color, $size, $spread, $stroke-size),
+            shadow('#{$direction}', $color, $size, $spread, $stroke-size),
+            shadow('#{$direction}-right', $color, $size, $spread, $stroke-size);
+    } @else if $direction == 'left' or $direction == 'right' {
+        @return stroke($color, $stroke-size), shadow('top-#{$direction}', $color, $stroke-size, $spread, $size),
+            shadow('#{$direction}', $color, $size, $spread, $stroke-size),
+            shadow('bottom-#{$direction}', $color, $stroke-size, $spread, $size);
+    } @else {
+        @warn 'Invalid direction '#{$direction}' provided.';
+    }
+}
+
+// WIP
+// @function shade($color: red, $width: 1, $iters: 32, $offset: 0) {
+//     $result: ();
+
+//     @for $index from 0 through $iters - 1 {
+//         $angle: math.div(360deg, $iters) * $index;
+//         $x: $width * cos($angle);
+//         $y: $width * sin($angle);
+
+//         $shadow: #{$x} #{$y} #{$offset} #{$color};
+
+//         $result: append($result, $shadow, comma);
+//     }
+
+//     @return $result;
+// }
+
+@function shade($color: red, $width: 1, $iters: 32, $offset: 0) {
+    $result: ();
+
+    @for $index from 0 through $iters - 1 {
+        $angle: math.div(360deg, $iters) * $index;
+        $x: $width * cos($angle);
+        $y: $width * sin($angle) + $offset;
+
+        $shadow: #{$x} #{$y} 0 #{$color};
+
+        $result: append($result, $shadow, comma);
+    }
+
+    @return $result;
+}
